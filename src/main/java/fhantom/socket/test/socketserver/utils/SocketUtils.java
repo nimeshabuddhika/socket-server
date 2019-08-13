@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Set;
 
 /**
  * @author Nimesha Buddhika on 8/12/2019 6:08 PM
@@ -68,8 +69,9 @@ public class SocketUtils {
     @Scheduled(cron = "0 0/5 * * * ?")
     private void checkDisconnectUsers() {
         try {
-            logger.info("Disconnect user scheduler running | User count : {}", userList.keySet().size());
-            for (String userId : userList.keySet()) {
+            Set<String> users = userList.keySet();
+            logger.info("Disconnect user scheduler running | User count : {}", users.size());
+            for (String userId : users) {
                 SocketDto socketDto = userList.get(userId);
                 try {
                     if (!ping(socketDto).equals("OK"))
