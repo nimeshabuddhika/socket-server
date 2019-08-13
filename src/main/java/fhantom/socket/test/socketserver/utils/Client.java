@@ -30,7 +30,7 @@ public class Client {
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             JSONObject payload = new JSONObject();
-            payload.put("message", "reg");
+            payload.put("type", "register");
             payload.put("user", "1");
 
             writer.println(payload.toString());
@@ -39,12 +39,14 @@ public class Client {
             while ((message = reader.readLine()) != null) {
 
                 System.out.println(message);
-
-                //cWriter.println(message);
-                //cWriter.flush();
+                if (message.startsWith("{") && message.endsWith("}")) {
+                    JSONObject jsonObject = new JSONObject(message);
+                    if (jsonObject.getString("type").equals("response")) {
+                        writer.println("OK");
+                        writer.flush();
+                    }
+                }
             }
-
-
         } catch (IOException e) {
             e.printStackTrace();
         }

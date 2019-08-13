@@ -1,5 +1,6 @@
 package fhantom.socket.test.socketserver.utils;
 
+import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
@@ -9,6 +10,7 @@ import java.net.Socket;
 public class SocketDto {
     private Socket socket;
     private PrintWriter printWriter;
+    private BufferedReader bufferedReader;
 
     public SocketDto(Socket socket, PrintWriter printWriter) {
         this.socket = socket;
@@ -29,5 +31,13 @@ public class SocketDto {
 
     public void setPrintWriter(PrintWriter printWriter) {
         this.printWriter = printWriter;
+    }
+
+    public BufferedReader getBufferedReader() {
+        return bufferedReader;
+    }
+
+    public void setBufferedReader(BufferedReader bufferedReader) {
+        this.bufferedReader = bufferedReader;
     }
 }

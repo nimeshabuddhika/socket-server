@@ -47,7 +47,7 @@ public class ClientHandler implements Runnable {
         try {
             if ((message = reader.readLine()) != null) {
                 JSONObject jsonObject = new JSONObject(message);
-                if (jsonObject.getString("message").equals("reg")) {
+                if (jsonObject.getString("type").equals("register")) {
                     userId = jsonObject.getString("user");
                     logger.info("User {} is connected to socket server", userId);
                     userList.add(userId, new SocketDto(clientSocket, printWriter));

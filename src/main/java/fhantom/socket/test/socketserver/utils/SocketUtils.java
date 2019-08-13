@@ -1,11 +1,16 @@
 package fhantom.socket.test.socketserver.utils;
 
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -17,9 +22,16 @@ import java.net.Socket;
 public class SocketUtils {
     private static final Logger logger = LoggerFactory.getLogger(SocketUtils.class);
     private static final int SERVER_PORT = 2000;
+    private static String jsonResponse;
     private static ServerSocket serverSocket;
 
     private final UserList userList;
+
+    static {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("type", "response");
+        jsonResponse = jsonObject.toString();
+    }
 
     @Autowired
     public SocketUtils(UserList userList) {
@@ -51,28 +63,39 @@ public class SocketUtils {
                 }
             }
         }).start();
-
-
-        new Thread(() -> checkDisconnectUsers()).start();
     }
 
+    @Scheduled(cron = "0 0/5 * * * ?")
     private void checkDisconnectUsers() {
         try {
-            while (true) {
-                logger.info("Disconnect user scheduler running | User count : {}", userList.keySet().size());
-                for (String userId : userList.keySet()) {
-                    SocketDto socketDto = userList.get(userId);
-                    try {
-                        socketDto.getSocket().getInputStream().read();
-                    } catch (Exception e) {
-                        logger.error("User {} is disconnected", userId);
-                        userList.remove(userId);
-                    }
+            logger.info("Disconnect user scheduler running | User count : {}", userList.keySet().size());
+            for (String userId : userList.keySet()) {
+                SocketDto socketDto = userList.get(userId);
+                try {
+                    if (!ping(socketDto).equals("OK"))
+                        close(userId, socketDto);
+                } catch (Exception e) {
+                    close(userId, socketDto);
                 }
-                Thread.sleep(1000 * 10);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void close(String userId, SocketDto socketDto) throws IOException {
+        logger.error("User {} is disconnected", userId);
+        userList.remove(userId);
+        socketDto.getPrintWriter().close();
+        socketDto.getBufferedReader().close();
+        socketDto.getSocket().close();
+    }
+
+    private String ping(SocketDto socketDto) throws IOException {
+        socketDto.getPrintWriter().println(jsonResponse);
+        socketDto.getPrintWriter().flush();
+        if (socketDto.getBufferedReader() == null)
+             socketDto.setBufferedReader(new BufferedReader(new InputStreamReader(socketDto.getSocket().getInputStream())));
+        return socketDto.getBufferedReader().readLine();
     }
 }

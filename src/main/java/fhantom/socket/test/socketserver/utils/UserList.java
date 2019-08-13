@@ -3,6 +3,7 @@ package fhantom.socket.test.socketserver.utils;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,6 +28,6 @@ public class UserList {
     }
 
     public Set<String> keySet() {
-        return users.keySet();
+        return new HashSet<>(users.keySet());
     }
 }
