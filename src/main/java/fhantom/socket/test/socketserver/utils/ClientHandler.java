@@ -1,6 +1,9 @@
 package fhantom.socket.test.socketserver.utils;
 
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,15 +14,23 @@ import java.net.Socket;
 /**
  * @author Nimesha Buddhika on 8/12/2019 6:20 PM
  */
-
+@Component
 public class ClientHandler implements Runnable {
 
-    BufferedReader reader;
-    Socket clientSocket;
-    PrintWriter printWriter;
-    private String usereId = "";
+    private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
 
-    public ClientHandler(Socket socket, PrintWriter writer) {
+    private BufferedReader reader;
+    private Socket clientSocket;
+    private PrintWriter printWriter;
+
+    private final UserList userList;
+
+
+    public ClientHandler(UserList userList) {
+        this.userList = userList;
+    }
+
+    public void setConfigs(Socket socket, PrintWriter writer) {
         printWriter = writer;
         try {
             clientSocket = socket;
@@ -32,22 +43,19 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         String message = "";
+        String userId = "";
         try {
             if ((message = reader.readLine()) != null) {
                 JSONObject jsonObject = new JSONObject(message);
-
                 if (jsonObject.getString("message").equals("reg")) {
-                    usereId = jsonObject.getString("user");
-                    UserList.users.put(usereId, new SocketDto(clientSocket, printWriter));
-                    //break;
+                    userId = jsonObject.getString("user");
+                    logger.info("User {} is connected to socket server", userId);
+                    userList.add(userId, new SocketDto(clientSocket, printWriter));
                 }
-
-                //cWriter.println(message);
-                //cWriter.flush();
             }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            UserList.users.remove(usereId);
+        } catch (Exception ex) {
+            userList.remove(userId);
+            logger.error("User {} disconnected unexpectedly | Error : {}", userId, ex.getMessage());
         }
     }
 }

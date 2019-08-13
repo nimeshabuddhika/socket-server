@@ -1,23 +1,31 @@
 package fhantom.socket.test.socketserver.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Nimesha Buddhika on 8/12/2019 6:08 PM
  */
 @Component
 public class SocketUtils {
-
+    private static final Logger logger = LoggerFactory.getLogger(SocketUtils.class);
+    private static final int SERVER_PORT = 2000;
     private static ServerSocket serverSocket;
 
-    private static final List<Socket> socketList = new ArrayList<>();
+    private final UserList userList;
+
+    @Autowired
+    public SocketUtils(UserList userList) {
+        this.userList = userList;
+    }
+
 
     @PostConstruct
     public void init() throws Exception {
@@ -26,44 +34,45 @@ public class SocketUtils {
             @Override
             public void run() {
                 try {
-                    serverSocket = new ServerSocket(2000);
-                    System.out.println("Socket started : " + 2000);
-                    while (true) {
-                        Socket clientSocket = serverSocket.accept();
-                        PrintWriter pWriter = new PrintWriter(clientSocket.getOutputStream());
+                    if (serverSocket == null) {
+                        serverSocket = new ServerSocket(SERVER_PORT);
+                        logger.info("Socket started on port : {}", SERVER_PORT);
+                        while (true) {
+                            Socket clientSocket = serverSocket.accept();
+                            PrintWriter pWriter = new PrintWriter(clientSocket.getOutputStream());
 
-                        Thread listener = new Thread(new ClientHandler(clientSocket, pWriter));
-                        listener.start();
+                            ClientHandler clientHandler = new ClientHandler(userList);
+                            clientHandler.setConfigs(clientSocket, pWriter);
+                            Thread listener = new Thread(clientHandler);
+                            listener.start();
+                        }
                     }
                 } catch (Exception e) {
                 }
             }
         }).start();
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
 
-                while (true) {
+        new Thread(() -> checkDisconnectUsers()).start();
+    }
+
+    private void checkDisconnectUsers() {
+        try {
+            while (true) {
+                logger.info("Disconnect user scheduler running | User count : {}", userList.keySet().size());
+                for (String userId : userList.keySet()) {
+                    SocketDto socketDto = userList.get(userId);
                     try {
-                        for (String userId : UserList.users.keySet()) {
-                            SocketDto socketDto = UserList.users.get(userId);
-                            try {
-                                socketDto.getSocket().getInputStream().read();
-                            } catch (Exception e) {
-                                System.out.println("ERROR writing data to socket !!!");
-                                UserList.users.remove(userId);
-                            }
-                        }
-                        Thread.sleep(1000);
-
+                        socketDto.getSocket().getInputStream().read();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        logger.error("User {} is disconnected", userId);
+                        userList.remove(userId);
                     }
                 }
-
+                Thread.sleep(1000 * 10);
             }
-        }).start();
-
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
