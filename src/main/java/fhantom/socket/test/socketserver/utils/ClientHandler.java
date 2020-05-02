@@ -51,6 +51,7 @@ public class ClientHandler implements Runnable {
                     userId = jsonObject.getString("user");
                     logger.info("User {} is connected to socket server", userId);
                     userList.add(userId, new SocketDto(clientSocket, printWriter));
+                    Thread.currentThread().interrupt();
                 }
             }
         } catch (Exception ex) {

@@ -43,25 +43,22 @@ public class SocketUtils {
     @PostConstruct
     public void init() throws Exception {
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    if (serverSocket == null) {
-                        serverSocket = new ServerSocket(SERVER_PORT);
-                        logger.info("Socket started on port : {}", SERVER_PORT);
-                        while (true) {
-                            Socket clientSocket = serverSocket.accept();
-                            PrintWriter pWriter = new PrintWriter(clientSocket.getOutputStream());
+        new Thread(() -> {
+            try {
+                if (serverSocket == null) {
+                    serverSocket = new ServerSocket(SERVER_PORT);
+                    logger.info("Socket started on port : {}", SERVER_PORT);
+                    while (true) {
+                        Socket clientSocket = serverSocket.accept();
+                        PrintWriter pWriter = new PrintWriter(clientSocket.getOutputStream());
 
-                            ClientHandler clientHandler = new ClientHandler(userList);
-                            clientHandler.setConfigs(clientSocket, pWriter);
-                            Thread listener = new Thread(clientHandler);
-                            listener.start();
-                        }
+                        ClientHandler clientHandler = new ClientHandler(userList);
+                        clientHandler.setConfigs(clientSocket, pWriter);
+                        Thread listener = new Thread(clientHandler);
+                        listener.start();
                     }
-                } catch (Exception e) {
                 }
+            } catch (Exception e) {
             }
         }).start();
     }
